@@ -30,7 +30,6 @@ SEARCH_QUERIES = [
     "stihl fs 310",
     "stihl fs310",
     "stihl debroussailleuse",
-    "stihl débroussailleuse",
     "debroussailleuse thermique stihl",
     "stihl bg 86",
     "stihl bg86",
@@ -38,7 +37,6 @@ SEARCH_QUERIES = [
     "souffleur a feuilles stihl",
     "stihl hs 81",
     "stihl hs81r",
-    "taille haie stihl",
     "stihl taille haie",
 ]
 
