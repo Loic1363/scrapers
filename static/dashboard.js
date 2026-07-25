@@ -1,181 +1,295 @@
-const REFRESH_MS = 15000;
+/* ===== Logs & état scraper (repris de l'implémentation d'origine) ===== */
+const consoleEl = document.getElementById("console");
+const alarmBadge = document.getElementById("alarm-badge");
+const runBadge = document.getElementById("run-badge");
+const timerEl = document.getElementById("timer");
+const exportBtn = document.getElementById("export-btn");
+const consolePanel = document.getElementById("console-panel");
+const logsToggleBtn = document.getElementById("logs-toggle-btn");
 
-const state = {
-  sellers: [],
-  filters: { site: "all", model: "all", status: "all" },
-};
+let logCursor = 0;
+let nextRunAt = null;
+
+function isScrolledToBottom() {
+  return consoleEl.scrollHeight - consoleEl.scrollTop - consoleEl.clientHeight < 40;
+}
 
 function escapeHtml(str) {
-  return String(str).replace(/[&<>"']/g, (c) => ({
+  return str.replace(/[&<>"']/g, (c) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
   }[c]));
 }
 
-function formatDate(iso) {
-  if (!iso) return "?";
-  try {
-    return new Date(iso).toLocaleString("fr-FR", {
-      day: "2-digit", month: "2-digit", year: "numeric",
-      hour: "2-digit", minute: "2-digit",
-    });
-  } catch {
-    return iso;
+function renderLine(line) {
+  if (line.includes("ALARM: ")) {
+    const escaped = escapeHtml(line.replace("ALARM: ", ""));
+    return `<span class="log-alarm">${escaped}</span>`;
+  }
+  const escaped = escapeHtml(line);
+  return escaped.replace(/(\|\s*)(INFO|SUCCESS|WARNING|ERROR)(\s*\|)/, (_match, pre, word, post) => {
+    return `${pre}<span class="log-${word.toLowerCase()}">${word}</span>${post}`;
+  });
+}
+
+async function pollLogs() {
+  const stickToBottom = isScrolledToBottom();
+  const res = await fetch(`/api/logs?since=${logCursor}`);
+  const data = await res.json();
+  if (data.lines.length) {
+    const html = data.lines.map(renderLine).join("\n");
+    consoleEl.insertAdjacentHTML("beforeend", (consoleEl.textContent ? "\n" : "") + html);
+    logCursor = data.total;
+    if (stickToBottom) consoleEl.scrollTop = consoleEl.scrollHeight;
   }
 }
 
-function uniqueSites(sellers) {
-  return [...new Set(sellers.map((s) => s.site))].sort();
+async function pollState() {
+  const res = await fetch("/api/state");
+  const state = await res.json();
+
+  if (state.alarm) {
+    alarmBadge.textContent = `Alerte : ${state.alarm_count} annonce(s) suspecte(s)`;
+    alarmBadge.className = "badge badge-alarm";
+  } else {
+    alarmBadge.textContent = "Aucune alerte";
+    alarmBadge.className = "badge badge-ok";
+  }
+
+  if (state.running) {
+    runBadge.textContent = state.current_stage ? `En cours : ${state.current_stage}` : "Recherche en cours...";
+    runBadge.className = "badge badge-running";
+  } else {
+    runBadge.textContent = "En attente";
+    runBadge.className = "badge badge-idle";
+  }
+
+  nextRunAt = state.next_run_at ? new Date(state.next_run_at) : null;
 }
 
-function uniqueModels(sellers) {
-  const models = new Set();
-  sellers.forEach((s) => s.listings.forEach((l) => {
-    if (l.matched_model) models.add(l.matched_model);
-  }));
-  return [...models].sort();
+function tickTimer() {
+  if (!nextRunAt) { timerEl.textContent = "Prochain passage : --:--:--"; return; }
+  const diffMs = nextRunAt.getTime() - Date.now();
+  if (diffMs <= 0) { timerEl.textContent = "Prochain passage : en cours..."; return; }
+  const totalSeconds = Math.floor(diffMs / 1000);
+  const h = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
+  const m = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
+  const s = String(totalSeconds % 60).padStart(2, "0");
+  timerEl.textContent = `Prochain passage : ${h}:${m}:${s}`;
 }
 
-function buildFilterList(container, items, filterKey, allLabel) {
+exportBtn.addEventListener("click", () => { window.location.href = "/api/export"; });
+logsToggleBtn.addEventListener("click", () => {
+  const open = consolePanel.classList.toggle("open");
+  logsToggleBtn.textContent = open ? "Masquer les logs" : "Afficher les logs";
+});
+
+pollLogs(); pollState();
+setInterval(pollLogs, 2000);
+setInterval(pollState, 3000);
+setInterval(tickTimer, 1000);
+
+/* ===== Dashboard vendeurs/annonces ===== */
+let sellers = [];
+let filters = { status: "all", site: "all", model: "all", search: "" };
+let selectedId = null;
+let treated = {};
+let view = "table";
+let map = null;
+let markersLayer = null;
+
+const statusDefs = [
+  { key: "all", label: "Tous" },
+  { key: "normal", label: "Normal" },
+  { key: "suspect", label: "Suspects" },
+  { key: "multi-site", label: "Multi-sites" },
+];
+
+const statusMeta = {
+  "normal": { label: "Normal", cls: "status-normal" },
+  "suspect": { label: "Suspect", cls: "status-suspect" },
+  "multi-site": { label: "Multi-sites", cls: "status-multi-site" },
+};
+
+function renderPills() {
+  const container = document.getElementById("status-pills");
   container.innerHTML = "";
-  const allLi = document.createElement("li");
-  allLi.className = "filter-item" + (state.filters[filterKey] === "all" ? " active" : "");
-  allLi.dataset.filter = filterKey;
-  allLi.dataset.value = "all";
-  allLi.textContent = allLabel;
-  container.appendChild(allLi);
-
-  items.forEach((value) => {
-    const li = document.createElement("li");
-    li.className = "filter-item" + (state.filters[filterKey] === value ? " active" : "");
-    li.dataset.filter = filterKey;
-    li.dataset.value = value;
-    li.textContent = value;
-    container.appendChild(li);
+  statusDefs.forEach(d => {
+    const btn = document.createElement("button");
+    btn.className = "pill" + (filters.status === d.key ? " active" : "");
+    btn.textContent = d.label;
+    btn.addEventListener("click", () => { filters.status = d.key; renderPills(); renderTable(); });
+    container.appendChild(btn);
   });
 }
 
-function renderFilters() {
-  buildFilterList(document.getElementById("site-filters"), uniqueSites(state.sellers), "site", "Toutes");
-  buildFilterList(document.getElementById("model-filters"), uniqueModels(state.sellers), "model", "Tous");
+function fmtDate(iso) {
+  return new Date(iso).toLocaleDateString("fr-FR");
 }
 
-function renderStats() {
-  const total = state.sellers.length;
-  const suspects = state.sellers.filter((s) => s.is_suspect).length;
-  const crossSite = state.sellers.filter((s) => s.is_cross_site).length;
-  const models = uniqueModels(state.sellers).length;
-
-  document.getElementById("stats-row").innerHTML = `
-    <div class="stat">
-      <span class="stat-label">Vendeurs suivis</span>
-      <span class="stat-value">${total}</span>
-    </div>
-    <div class="stat">
-      <span class="stat-label">Suspects (2+ annonces)</span>
-      <span class="stat-value alarm">${suspects}</span>
-    </div>
-    <div class="stat">
-      <span class="stat-label">Multi-plateformes</span>
-      <span class="stat-value cross">${crossSite}</span>
-    </div>
-    <div class="stat">
-      <span class="stat-label">Modèles ciblés</span>
-      <span class="stat-value">${models}</span>
-    </div>
-  `;
-}
-
-function matchesFilters(seller) {
-  const { site, model, status } = state.filters;
-  if (site !== "all" && seller.site !== site) return false;
-  if (model !== "all" && !seller.listings.some((l) => l.matched_model === model)) return false;
-  if (status === "suspect" && !seller.is_suspect) return false;
-  if (status === "cross-site" && !seller.is_cross_site) return false;
-  return true;
-}
-
-function renderCard(seller) {
-  const badges = [];
-  if (seller.is_suspect) badges.push(`<span class="badge badge-suspect">Suspect</span>`);
-  if (seller.is_cross_site) {
-    badges.push(`<span class="badge badge-cross">${seller.cross_site_platforms.join(" + ")}</span>`);
-  }
-  if (seller.selling_pattern && seller.selling_pattern !== "insuffisant") {
-    badges.push(`<span class="badge badge-pattern">vente ${seller.selling_pattern}</span>`);
-  }
-
-  const listingsHtml = seller.listings.map((l) => `
-    <div class="listing">
-      <div class="listing-title">${escapeHtml(l.title || "Sans titre")}</div>
-      <div class="listing-row">
-        <span class="listing-price">${escapeHtml(l.price || "?")}</span>
-        ${l.location ? `<span>${escapeHtml(l.location)}</span>` : ""}
-        <span>${escapeHtml(l.matched_model || "?")}</span>
-        <span class="listing-date">${formatDate(l.posted_at)}</span>
-      </div>
-      <a class="listing-link" href="${l.url}" target="_blank" rel="noopener noreferrer">${escapeHtml(l.url || "")}</a>
-    </div>
-  `).join("");
-
-  return `
-    <div class="card">
-      <div class="card-header">
-        <div>
-          <div class="seller-name">${escapeHtml(seller.seller_name || "Inconnu")}</div>
-          <div class="seller-meta">${escapeHtml(seller.site)} · id ${escapeHtml(seller.seller_id)}</div>
-        </div>
-        <div class="badges">${badges.join("")}</div>
-      </div>
-      <div class="listings">${listingsHtml}</div>
-      <div class="card-footer">
-        <span>${seller.listings.length} annonce${seller.listings.length > 1 ? "s" : ""}</span>
-        <span class="mono">détecté ${formatDate(seller.first_seen)}</span>
-      </div>
-    </div>
-  `;
-}
-
-function renderGrid() {
-  const grid = document.getElementById("suspects-grid");
-  const filtered = state.sellers
-    .filter(matchesFilters)
-    .sort((a, b) => b.listings.length - a.listings.length);
-
-  if (filtered.length === 0) {
-    grid.innerHTML = `<div class="empty">Aucun vendeur ne correspond aux filtres actuels.</div>`;
-    return;
-  }
-  grid.innerHTML = filtered.map(renderCard).join("");
-}
-
-function attachFilterHandlers() {
-  document.querySelectorAll(".filter-list").forEach((list) => {
-    list.addEventListener("click", (e) => {
-      const item = e.target.closest(".filter-item");
-      if (!item) return;
-      const { filter, value } = item.dataset;
-      state.filters[filter] = value;
-      renderFilters();
-      renderGrid();
+function flatListings() {
+  const q = filters.search.trim().toLowerCase();
+  const rows = [];
+  sellers.forEach(s => {
+    if (filters.status !== "all" && s.status !== filters.status) return;
+    s.listings.forEach(l => {
+      if (filters.site !== "all" && l.site !== filters.site) return;
+      if (filters.model !== "all" && l.model !== filters.model) return;
+      if (q && !(l.title.toLowerCase().includes(q) || s.name.toLowerCase().includes(q) || l.model.toLowerCase().includes(q))) return;
+      rows.push({ seller: s, listing: l });
     });
   });
+  return rows.sort((a, b) => new Date(b.listing.postedAt) - new Date(a.listing.postedAt));
 }
 
-async function refresh() {
-  try {
-    const res = await fetch("/api/suspects");
-    const data = await res.json();
-    state.sellers = data.sellers || [];
-    renderFilters();
-    renderStats();
-    renderGrid();
-    document.getElementById("refresh-status").textContent =
-      `Actualisé à ${new Date().toLocaleTimeString("fr-FR")}`;
-  } catch (err) {
-    document.getElementById("refresh-status").textContent = "Erreur de chargement";
+function renderTable() {
+  const rows = flatListings();
+  const container = document.getElementById("table-rows");
+  const empty = document.getElementById("empty-state");
+  container.innerHTML = "";
+  empty.style.display = rows.length ? "none" : "block";
+
+  rows.forEach(({ seller, listing }) => {
+    const meta = statusMeta[seller.status] || statusMeta.normal;
+    const row = document.createElement("div");
+    row.className = "table-row";
+    row.innerHTML = `
+      <div>${escapeHtml(seller.name)}</div>
+      <div class="cell-muted">${escapeHtml(listing.site)}</div>
+      <div>${escapeHtml(listing.model)}</div>
+      <div class="cell-muted">${escapeHtml(listing.title)}</div>
+      <div>${listing.price} €</div>
+      <div class="cell-muted">${escapeHtml(listing.city || "")}</div>
+      <div class="cell-muted">${fmtDate(listing.postedAt)}</div>
+      <div><span class="status-pill ${meta.cls}">${meta.label}</span></div>
+    `;
+    row.addEventListener("click", () => openPanel(seller.id));
+    container.appendChild(row);
+  });
+
+  document.getElementById("kpi-total").textContent = sellers.reduce((n, s) => n + s.listingCount, 0);
+  document.getElementById("kpi-suspects").textContent = sellers.filter(s => s.status !== "normal").length;
+  document.getElementById("kpi-crosssite").textContent = sellers.filter(s => s.status === "multi-site").length;
+}
+
+function openPanel(id) {
+  selectedId = id;
+  const s = sellers.find(x => x.id === id);
+  if (!s) return;
+  const meta = statusMeta[s.status] || statusMeta.normal;
+
+  document.getElementById("panel-avatar").textContent = s.name.slice(0, 2).toUpperCase();
+  document.getElementById("panel-name").textContent = s.name;
+  const statusEl = document.getElementById("panel-status");
+  statusEl.textContent = meta.label;
+  statusEl.className = "status-pill " + meta.cls;
+  document.getElementById("panel-id").textContent = s.id;
+  document.getElementById("panel-count").textContent = s.listingCount;
+  document.getElementById("panel-sites").textContent = s.sitesUsed.join(", ");
+  document.getElementById("panel-pattern").textContent =
+    s.pattern === "échelonné" ? "Échelonné (plusieurs jours)" :
+    s.pattern === "groupé" ? "Groupé (moins de 24h)" : "Insuffisant";
+
+  const noteEl = document.getElementById("panel-note");
+  if (s.status !== "normal") {
+    noteEl.style.display = "block";
+    noteEl.textContent = s.status === "multi-site"
+      ? `Même nom de vendeur repéré sur ${s.sitesUsed.length} plateformes différentes — à vérifier manuellement.`
+      : "Ce vendeur a publié plusieurs annonces correspondant aux modèles recherchés.";
+  } else {
+    noteEl.style.display = "none";
   }
+
+  const historyEl = document.getElementById("panel-history");
+  historyEl.innerHTML = "";
+  s.listings.forEach(l => {
+    const card = document.createElement("div");
+    card.className = "history-card";
+    card.innerHTML = `
+      <div class="history-top"><span>${escapeHtml(l.site)} — ${escapeHtml(l.model)}</span><span>${l.price} €</span></div>
+      <div class="history-title">${escapeHtml(l.title)}</div>
+      <div class="history-meta">${escapeHtml(l.city || "")} · posté le ${fmtDate(l.postedAt)}</div>
+      <a class="history-url" href="${l.url}" target="_blank">${l.url}</a>
+    `;
+    historyEl.appendChild(card);
+  });
+
+  const treatedBtn = document.getElementById("panel-treated-btn");
+  treatedBtn.textContent = treated[s.id] ? "Marqué comme traité" : "Marquer comme traité";
+  treatedBtn.onclick = () => { treated[s.id] = !treated[s.id]; treatedBtn.textContent = treated[s.id] ? "Marqué comme traité" : "Marquer comme traité"; };
+
+  document.getElementById("panel-view-link").href = s.listings[0]?.url || "#";
+
+  document.getElementById("overlay").classList.add("open");
+  document.getElementById("detail-panel").classList.add("open");
 }
 
-attachFilterHandlers();
-refresh();
-setInterval(refresh, REFRESH_MS);
+function closePanel() {
+  selectedId = null;
+  document.getElementById("overlay").classList.remove("open");
+  document.getElementById("detail-panel").classList.remove("open");
+}
+
+document.getElementById("overlay").addEventListener("click", closePanel);
+document.getElementById("panel-close-btn").addEventListener("click", closePanel);
+document.getElementById("search-input").addEventListener("input", (e) => { filters.search = e.target.value; renderTable(); });
+document.getElementById("site-filter").addEventListener("change", (e) => { filters.site = e.target.value; renderTable(); });
+document.getElementById("model-filter").addEventListener("change", (e) => { filters.model = e.target.value; renderTable(); });
+
+function initMap() {
+  if (map) return;
+  map = L.map("map").setView([50.5, 4.2], 7);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap contributors" }).addTo(map);
+  markersLayer = L.layerGroup().addTo(map);
+}
+
+function renderMap() {
+  if (!map) return;
+  markersLayer.clearLayers();
+  const byCity = {};
+  sellers.forEach(s => s.listings.forEach(l => {
+    if (!l.lat || !l.lon) return;
+    if (!byCity[l.city]) byCity[l.city] = { total: 0, suspect: 0, lat: l.lat, lon: l.lon };
+    byCity[l.city].total++;
+    if (s.status !== "normal") byCity[l.city].suspect++;
+  }));
+  Object.entries(byCity).forEach(([city, d]) => {
+    const ratio = d.suspect / d.total;
+    const color = ratio > 0.5 ? "#d70015" : ratio > 0 ? "#ff9500" : "#0071e3";
+    const radius = 8 + Math.sqrt(d.total) * 4;
+    const marker = L.circleMarker([d.lat, d.lon], { radius, color: "#fff", weight: 2, fillColor: color, fillOpacity: 0.85 }).addTo(markersLayer);
+    marker.bindTooltip(`<b>${city}</b><br>${d.total} annonce(s) — ${d.suspect} suspecte(s)`, { direction: "top", offset: [0, -radius] });
+  });
+}
+
+const viewTableBtn = document.getElementById("view-table-btn");
+const viewMapBtn = document.getElementById("view-map-btn");
+viewTableBtn.addEventListener("click", () => {
+  view = "table";
+  viewTableBtn.classList.add("active"); viewMapBtn.classList.remove("active");
+  document.getElementById("table-view").style.display = "block";
+  document.getElementById("map-view").style.display = "none";
+});
+viewMapBtn.addEventListener("click", () => {
+  view = "map";
+  viewMapBtn.classList.add("active"); viewTableBtn.classList.remove("active");
+  document.getElementById("table-view").style.display = "none";
+  document.getElementById("map-view").style.display = "block";
+  initMap();
+  setTimeout(() => { map.invalidateSize(); renderMap(); }, 50);
+});
+
+async function loadSellers() {
+  try {
+    const res = await fetch("/api/sellers");
+    sellers = await res.json();
+  } catch (e) {
+    sellers = [];
+    console.error("Impossible de charger /api/sellers", e);
+  }
+  renderPills();
+  renderTable();
+  if (map) renderMap();
+}
+
+loadSellers();
+setInterval(loadSellers, 60000);

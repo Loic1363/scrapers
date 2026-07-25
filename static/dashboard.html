@@ -3,49 +3,114 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Dashboard — Surveillance Stihl</title>
+<title>Surveillance Stihl — Facebook / 2ememain / Vinted</title>
 <link rel="stylesheet" href="/dashboard.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous">
 </head>
 <body>
   <header>
-    <div class="header-top">
+    <div>
       <h1>Surveillance Stihl</h1>
-      <nav>
-        <a href="/">Console</a>
-        <a href="/dashboard" class="active">Dashboard</a>
-      </nav>
+      <div class="subtitle">Facebook Marketplace · 2ememain.be · Vinted — FS 55, FS 310, BG 86, HS 81R</div>
     </div>
-    <div class="stats-row" id="stats-row"></div>
+    <div class="header-actions">
+      <input id="search-input" type="text" placeholder="Rechercher un modèle, un vendeur, une annonce…">
+      <button id="export-btn" class="btn">Exporter les logs</button>
+    </div>
   </header>
 
-  <div class="layout">
-    <aside class="sidebar">
-      <div class="filter-group">
-        <div class="filter-label">Plateforme</div>
-        <ul class="filter-list" id="site-filters"></ul>
-      </div>
-      <div class="filter-group">
-        <div class="filter-label">Modèle</div>
-        <ul class="filter-list" id="model-filters"></ul>
-      </div>
-      <div class="filter-group">
-        <div class="filter-label">Statut</div>
-        <ul class="filter-list" id="status-filters">
-          <li class="filter-item active" data-filter="status" data-value="all">Tous les vendeurs</li>
-          <li class="filter-item" data-filter="status" data-value="suspect">Suspects (2+ annonces)</li>
-          <li class="filter-item" data-filter="status" data-value="cross-site">Multi-plateformes</li>
-        </ul>
-      </div>
-      <div class="refresh-row">
-        <span id="refresh-status">Actualisation auto : 15s</span>
-      </div>
-    </aside>
-
-    <main class="main">
-      <div class="grid" id="suspects-grid"></div>
-    </main>
+  <div class="status-bar">
+    <span id="alarm-badge" class="badge badge-ok">Aucune alerte</span>
+    <span id="run-badge" class="badge badge-idle">En attente</span>
+    <span id="timer" class="timer">Prochain passage : --:--:--</span>
+    <button id="logs-toggle-btn" class="btn">Afficher les logs</button>
   </div>
 
+  <div id="console-panel">
+    <pre id="console"></pre>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">Annonces détectées</div>
+      <div class="kpi-value" id="kpi-total">0</div>
+    </div>
+    <div class="kpi-card kpi-suspects">
+      <div class="kpi-label">Vendeurs suspects</div>
+      <div class="kpi-value" id="kpi-suspects">0</div>
+    </div>
+    <div class="kpi-card kpi-crosssite">
+      <div class="kpi-label">Correspondances multi-sites</div>
+      <div class="kpi-value" id="kpi-crosssite">0</div>
+    </div>
+    <div class="kpi-card kpi-models">
+      <div class="kpi-label">Modèles recherchés</div>
+      <div class="kpi-value">4</div>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <div class="filter-left">
+      <div id="status-pills"></div>
+      <select id="site-filter">
+        <option value="all">Toutes les plateformes</option>
+        <option value="Facebook Marketplace">Facebook Marketplace</option>
+        <option value="2ememain.be">2ememain.be</option>
+        <option value="Vinted">Vinted</option>
+      </select>
+      <select id="model-filter">
+        <option value="all">Tous les modèles</option>
+        <option value="FS 55">FS 55</option>
+        <option value="FS 310">FS 310</option>
+        <option value="BG 86">BG 86</option>
+        <option value="HS 81R">HS 81R</option>
+      </select>
+    </div>
+    <div class="view-toggle">
+      <button id="view-table-btn" class="active">Tableau</button>
+      <button id="view-map-btn">Carte</button>
+    </div>
+  </div>
+
+  <main>
+    <div id="table-view">
+      <div class="table-header">
+        <div>Vendeur</div><div>Site</div><div>Modèle</div><div>Annonce</div><div>Prix</div><div>Localisation</div><div>Posté le</div><div>Statut</div>
+      </div>
+      <div id="table-rows"></div>
+      <div id="empty-state" class="empty-state" style="display:none;">Aucun résultat pour ces filtres.</div>
+    </div>
+    <div id="map-view"><div id="map"></div></div>
+  </main>
+
+  <div id="overlay" class="overlay"></div>
+  <div id="detail-panel">
+    <div class="panel-close-row"><button id="panel-close-btn" class="panel-close-btn">✕</button></div>
+    <div class="panel-body">
+      <div class="panel-head">
+        <div class="avatar" id="panel-avatar"></div>
+        <div>
+          <div class="panel-name" id="panel-name"></div>
+          <span class="status-pill" id="panel-status"></span>
+        </div>
+      </div>
+      <div class="meta-grid">
+        <div><div class="meta-label">Identifiant</div><div class="meta-value" id="panel-id"></div></div>
+        <div><div class="meta-label">Annonces</div><div class="meta-value" id="panel-count"></div></div>
+        <div><div class="meta-label">Plateformes</div><div class="meta-value" id="panel-sites"></div></div>
+        <div><div class="meta-label">Rythme de vente</div><div class="meta-value" id="panel-pattern"></div></div>
+      </div>
+      <div id="panel-note" class="note-box" style="display:none;"></div>
+      <div class="section-label">Historique des annonces</div>
+      <div class="history-list" id="panel-history"></div>
+      <div class="panel-actions">
+        <button id="panel-treated-btn" class="action-primary">Marquer comme traité</button>
+        <a id="panel-view-link" class="action-secondary" target="_blank">Voir l'annonce</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
   <script src="/dashboard.js"></script>
 </body>
 </html>
