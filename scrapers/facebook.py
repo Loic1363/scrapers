@@ -40,7 +40,7 @@ SEARCH_QUERIES = [
     "stihl taille haie",
 ]
 
-CACHE_FILE = Path(__file__).parent / "results" / "seen_listing_ids.json"
+CACHE_FILE = Path(__file__).parent.parent / "results" / "seen_ids_facebook.json"
 
 MAX_RETRIES = 3
 SCROLL_PASSES = 2
@@ -201,7 +201,7 @@ async def scrape_stolen_stihl_tools() -> List[Dict]:
     seen_ids: set = set()
 
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True, channel="chrome")
+        browser = await p.chromium.launch(headless=True)
         context = await browser.new_context(locale="fr-BE", user_agent=_USER_AGENT)
 
         await _accept_cookies(context)
