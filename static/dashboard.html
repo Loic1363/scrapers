@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard — Surveillance Stihl</title>
+<link rel="stylesheet" href="/dashboard.css">
+</head>
+<body>
+  <header>
+    <div class="header-top">
+      <h1>Surveillance Stihl</h1>
+      <nav>
+        <a href="/">Console</a>
+        <a href="/dashboard" class="active">Dashboard</a>
+      </nav>
+    </div>
+    <div class="stats-row" id="stats-row"></div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="filter-group">
+        <div class="filter-label">Plateforme</div>
+        <ul class="filter-list" id="site-filters"></ul>
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">Modèle</div>
+        <ul class="filter-list" id="model-filters"></ul>
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">Statut</div>
+        <ul class="filter-list" id="status-filters">
+          <li class="filter-item active" data-filter="status" data-value="all">Tous les vendeurs</li>
+          <li class="filter-item" data-filter="status" data-value="suspect">Suspects (2+ annonces)</li>
+          <li class="filter-item" data-filter="status" data-value="cross-site">Multi-plateformes</li>
+        </ul>
+      </div>
+      <div class="refresh-row">
+        <span id="refresh-status">Actualisation auto : 15s</span>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="grid" id="suspects-grid"></div>
+    </main>
+  </div>
+
+  <script src="/dashboard.js"></script>
+</body>
+</html>

@@ -61,7 +61,7 @@ def _append_log(line: str) -> None:
 sys.stdout = _TeeStream(sys.stdout)
 sys.stderr = _TeeStream(sys.stderr)
 
-from scrapers import logdb  # noqa: E402
+from scrapers import logdb, suspects  # noqa: E402
 import run as scraper  # noqa: E402
 from flask import Flask, Response, jsonify, request  # noqa: E402
 
@@ -106,6 +106,38 @@ def _stage_watcher() -> None:
 @app.route("/")
 def index():
     return app.send_static_file("index.html")
+
+
+@app.route("/dashboard")
+def dashboard():
+    return app.send_static_file("dashboard.html")
+
+
+@app.route("/api/suspects")
+def api_suspects():
+    data = suspects._load()
+    sellers = data.get("sellers", {})
+
+    by_name: dict[str, set[str]] = {}
+    for entry in sellers.values():
+        norm = suspects._normalize_name(entry.get("seller_name"))
+        if norm:
+            by_name.setdefault(norm, set()).add(entry["site"])
+
+    out = []
+    for key, entry in sellers.items():
+        norm = suspects._normalize_name(entry.get("seller_name"))
+        sites_for_name = by_name.get(norm, set())
+        out.append({
+            **entry,
+            "key": key,
+            "is_suspect": len(entry["listings"]) >= 2,
+            "is_cross_site": len(sites_for_name) >= 2,
+            "cross_site_platforms": sorted(sites_for_name),
+            "selling_pattern": suspects.selling_pattern(entry["listings"]),
+        })
+
+    return jsonify({"sellers": out})
 
 
 @app.route("/api/state")

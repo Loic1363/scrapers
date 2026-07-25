@@ -31,10 +31,44 @@ header {
 }
 
 h1 {
-  margin: 0 0 10px 0;
+  margin: 0;
   font-size: 16px;
   font-weight: 600;
   color: var(--text);
+}
+
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+nav {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+nav a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 11px;
+  border-radius: 5px;
+  border: 1px solid transparent;
+}
+
+nav a:hover {
+  border-color: var(--border);
+  color: var(--text);
+}
+
+nav a.active {
+  background: var(--accent);
+  color: #fff;
 }
 
 .status-bar {
