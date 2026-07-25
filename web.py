@@ -61,7 +61,7 @@ def _append_log(line: str) -> None:
 sys.stdout = _TeeStream(sys.stdout)
 sys.stderr = _TeeStream(sys.stderr)
 
-from scrapers import logdb  # noqa: E402
+from scrapers import logdb, suspects  # noqa: E402
 import run as scraper  # noqa: E402
 from flask import Flask, Response, jsonify, request  # noqa: E402
 
@@ -106,6 +106,16 @@ def _stage_watcher() -> None:
 @app.route("/")
 def index():
     return app.send_static_file("index.html")
+
+
+@app.route("/dashboard")
+def dashboard():
+    return app.send_static_file("dashboard.html")
+
+
+@app.route("/api/sellers")
+def api_sellers():
+    return jsonify(suspects.to_dashboard_sellers())
 
 
 @app.route("/api/state")
