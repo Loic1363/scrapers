@@ -12,34 +12,10 @@ from urllib.parse import urlencode
 
 from loguru import logger as log
 
+from .config import THEFT_TIME, SEARCH_QUERIES, match_model
+
 BASE_URL = "https://www.vinted.be"
 SEARCH_API = f"{BASE_URL}/api/v2/catalog/items"
-
-THEFT_TIME = datetime.datetime(2026, 7, 24, 20, 0, 0,
-                               tzinfo=datetime.timezone(datetime.timedelta(hours=2)))
-
-STOLEN_MODELS: Dict[str, List[str]] = {
-    "FS 55":  ["fs 55", "fs55", "fs-55"],
-    "FS 310": ["fs 310", "fs310", "fs-310", "fs310r"],
-    "BG 86":  ["bg 86", "bg86", "bg-86"],
-    "HS 81R": ["hs 81", "hs81", "hs-81", "hs81r"],
-}
-
-SEARCH_QUERIES = [
-    "stihl fs 55",
-    "stihl fs55",
-    "stihl fs 310",
-    "stihl fs310",
-    "stihl debroussailleuse",
-    "debroussailleuse thermique stihl",
-    "stihl bg 86",
-    "stihl bg86",
-    "souffleur stihl",
-    "souffleur a feuilles stihl",
-    "stihl hs 81",
-    "stihl hs81r",
-    "stihl taille haie",
-]
 
 CACHE_FILE = Path(__file__).parent.parent / "results" / "seen_ids_vinted.json"
 
@@ -77,8 +53,6 @@ def _new_opener():
 
 
 def _prime_session(opener) -> None:
-    """Visite la page d'accueil pour obtenir un jeton de session anonyme (cookies),
-    requis par l'API interne du catalogue."""
     req = urllib.request.Request(f"{BASE_URL}/", headers=_HEADERS)
     opener.open(req, timeout=20).read()
 
@@ -153,14 +127,6 @@ def _is_posted_after_theft(posted_at: Optional[str]) -> bool:
     return dt >= THEFT_TIME
 
 
-def _match_model(title: Optional[str]) -> Optional[str]:
-    if not title:
-        return None
-    t = title.lower()
-    for model, keywords in STOLEN_MODELS.items():
-        if any(kw in t for kw in keywords):
-            return model
-    return None
 
 
 def scrape_stolen_stihl_tools() -> List[Dict]:
@@ -196,7 +162,7 @@ def scrape_stolen_stihl_tools() -> List[Dict]:
 
     matched: List[Dict] = []
     for listing in recent:
-        model = _match_model(listing.get("title"))
+        model = match_model(listing.get("title"))
         if model:
             listing["_matched_model"] = model
             listing["is_new"] = listing.get("id") not in previously_seen

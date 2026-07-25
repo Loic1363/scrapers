@@ -15,6 +15,7 @@ def _connect() -> sqlite3.Connection:
         DB_FILE.parent.mkdir(exist_ok=True)
         _connection = sqlite3.connect(DB_FILE, check_same_thread=False)
         _connection.execute(
+            "CREATE TABLE IF NOT EXISTS logs (id INTEGER PRIMARY KEY AUTOINCREMENT, line TEXT NOT NULL)"
         )
         _connection.commit()
     return _connection

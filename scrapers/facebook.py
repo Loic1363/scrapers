@@ -10,35 +10,12 @@ from urllib.parse import quote
 from loguru import logger as log
 from playwright.async_api import async_playwright, BrowserContext, TimeoutError as PlaywrightTimeoutError
 
+from .config import THEFT_TIME, SEARCH_QUERIES, match_model
+
 MARKETPLACE_LOCATION = "brussels"
 SEARCH_RADIUS_KM = 200
 
-THEFT_TIME = datetime.datetime(2026, 7, 24, 20, 0, 0,
-                               tzinfo=datetime.timezone(datetime.timedelta(hours=2)))
 THEFT_TIMESTAMP = int(THEFT_TIME.timestamp())
-
-STOLEN_MODELS: Dict[str, List[str]] = {
-    "FS 55":  ["fs 55", "fs55", "fs-55"],
-    "FS 310": ["fs 310", "fs310", "fs-310", "fs310r"],
-    "BG 86":  ["bg 86", "bg86", "bg-86"],
-    "HS 81R": ["hs 81", "hs81", "hs-81", "hs81r"],
-}
-
-SEARCH_QUERIES = [
-    "stihl fs 55",
-    "stihl fs55",
-    "stihl fs 310",
-    "stihl fs310",
-    "stihl debroussailleuse",
-    "debroussailleuse thermique stihl",
-    "stihl bg 86",
-    "stihl bg86",
-    "souffleur stihl",
-    "souffleur a feuilles stihl",
-    "stihl hs 81",
-    "stihl hs81r",
-    "stihl taille haie",
-]
 
 CACHE_FILE = Path(__file__).parent.parent / "results" / "seen_ids_facebook.json"
 
@@ -172,16 +149,6 @@ def _is_posted_after_theft(creation_time: Optional[int]) -> bool:
     return creation_time >= THEFT_TIMESTAMP
 
 
-def _match_model(title: Optional[str]) -> Optional[str]:
-    if not title:
-        return None
-    t = title.lower()
-    for model, keywords in STOLEN_MODELS.items():
-        if any(kw in t for kw in keywords):
-            return model
-    return None
-
-
 def _listing_url(listing_id: str) -> str:
     return f"https://www.facebook.com/marketplace/item/{listing_id}/"
 
@@ -232,7 +199,7 @@ async def scrape_stolen_stihl_tools() -> List[Dict]:
 
     matched: List[Dict] = []
     for listing in recent:
-        model = _match_model(listing.get("title"))
+        model = match_model(listing.get("title"))
         if model:
             listing["_matched_model"] = model
             lid = listing.get("id")
