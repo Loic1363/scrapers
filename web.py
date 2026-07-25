@@ -1,5 +1,3 @@
-"""Interface locale unique pour les 3 scrapers (Facebook, 2ememain, Vinted) :
-console live, alarme, export des logs, timer, étape en cours."""
 import asyncio
 import datetime
 import logging
@@ -12,8 +10,7 @@ BASE_DIR = Path(__file__).parent
 
 
 class _TeeStream:
-    """Duplique l'écriture vers le flux d'origine et vers le buffer de logs affiché dans l'UI."""
-
+    
     def __init__(self, original):
         self._original = original
         self._pending = ""
@@ -36,6 +33,8 @@ class _TeeStream:
         return getattr(self._original, name)
 
 
+MAX_LOADED_LOGS = 4000
+
 _lock = threading.Lock()
 _log_lines: list[str] = []
 _state = {
@@ -51,16 +50,18 @@ _state = {
 def _append_log(line: str) -> None:
     if not line:
         return
+    formatted = f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {line}"
     with _lock:
-        _log_lines.append(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {line}")
-        if len(_log_lines) > 4000:
-            del _log_lines[: len(_log_lines) - 4000]
+        _log_lines.append(formatted)
+        if len(_log_lines) > MAX_LOADED_LOGS:
+            del _log_lines[: len(_log_lines) - MAX_LOADED_LOGS]
+        logdb.append(formatted)
 
 
-# Doit être fait AVANT d'importer run/scrapers, pour que loguru capture le bon flux stderr.
 sys.stdout = _TeeStream(sys.stdout)
 sys.stderr = _TeeStream(sys.stderr)
 
+from scrapers import logdb  # noqa: E402
 import run as scraper  # noqa: E402
 from flask import Flask, Response, jsonify, request  # noqa: E402
 
@@ -96,7 +97,6 @@ def _scraper_loop() -> None:
 
 
 def _stage_watcher() -> None:
-    """Reflète scraper.CURRENT_STAGE (mis à jour pendant run_once) dans l'état exposé à l'UI."""
     while True:
         with _lock:
             _state["current_stage"] = scraper.CURRENT_STAGE["name"]
@@ -136,9 +136,11 @@ def api_export():
 
 
 def main():
+    with _lock:
+        _log_lines.extend(logdb.load_recent(MAX_LOADED_LOGS))
     threading.Thread(target=_scraper_loop, daemon=True).start()
     threading.Thread(target=_stage_watcher, daemon=True).start()
-    print("Interface disponible sur http://127.0.0.1:8000 (et sur le réseau local, port 8000)")
+    print("Interface dispo sur http://127.0.0.1:8000 (et en local : port 8000)")
     app.run(host="0.0.0.0", port=8000, debug=False, use_reloader=False)
 
 
