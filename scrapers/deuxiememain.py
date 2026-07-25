@@ -58,10 +58,6 @@ _HEADERS = {
     "Accept-Language": "fr-BE,fr;q=0.9",
 }
 
-# La date des résultats de recherche n'est donnée qu'à la journée près, et peut même être
-# trompeuse : une annonce remise en avant (boostée) peut s'afficher comme "Aujourd'hui" alors
-# qu'elle est plus ancienne. La fiche de chaque annonce, elle, affiche un horodatage exact
-# ("depuis 23 juill. '26, 17:53") qu'on va chercher pour les annonces qui matchent un modèle volé.
 _MONTH_PREFIXES = [
     ("janv", 1), ("févr", 2), ("fevr", 2), ("mars", 3), ("avr", 4), ("mai", 5), ("juin", 6),
     ("juil", 7), ("août", 8), ("aout", 8), ("sept", 9), ("oct", 10), ("nov", 11), ("déc", 12), ("dec", 12),
@@ -281,9 +277,6 @@ def scrape_stolen_stihl_tools() -> List[Dict]:
         if i < len(SEARCH_QUERIES) - 1:
             time.sleep(random.uniform(MIN_QUERY_DELAY, MAX_QUERY_DELAY))
 
-    # Filtre large (jour près) : sûr pour ne rien manquer, mais une annonce remise en avant
-    # peut afficher une date récente sans l'être vraiment. Affiné ci-dessous pour les annonces
-    # qui matchent un modèle volé, via l'horodatage exact de leur fiche.
     recent = [l for l in all_listings if _is_posted_after_theft(l.get("creation_date"))]
     log.info(f"{len(all_listings)} annonces collectées → {len(recent)} avec une date affichée après le vol")
 
@@ -326,15 +319,15 @@ def scrape_stolen_stihl_tools() -> List[Dict]:
         seller_name = (items[0].get("seller") or {}).get("name", "inconnu")
         if len(models_found) >= 2 or len(items) >= 2:
             print("\n" + "=" * 60)
-            print("!!! ALERTE VENDEUR SUSPECT !!!")
-            print(f"    Vendeur : {seller_name} (id: {sid})")
-            print(f"    Modèles détectés : {', '.join(sorted(models_found))}")
-            print(f"    Nombre d'annonces : {len(items)}")
+            print("ALARM: !!! ALERTE VENDEUR SUSPECT !!!")
+            print(f"ALARM:     Vendeur : {seller_name} (id: {sid})")
+            print(f"ALARM:     Modèles détectés : {', '.join(sorted(models_found))}")
+            print(f"ALARM:     Nombre d'annonces : {len(items)}")
             for l in items:
                 tag = " [NOUVEAU]" if l.get("is_new") else ""
-                print(f"    → {l.get('title')}  |  {l.get('price')}{tag}")
+                print(f"ALARM:     → {l.get('title')}  |  {l.get('price')}{tag}")
                 if l.get("url"):
-                    print(f"      {l['url']}")
+                    print(f"ALARM:       {l['url']}")
             print("=" * 60 + "\n")
 
     matched_ids = {l.get("id") for l in matched}
@@ -345,7 +338,7 @@ def scrape_stolen_stihl_tools() -> List[Dict]:
         for l in matched:
             url = l.get("url") or "URL indisponible"
             tag = " [NOUVEAU]" if l.get("is_new") else ""
-            print(f"  [{l['_matched_model']}] {l.get('title')}  |  {l.get('price')}  →  {url}{tag}")
+            print(f"ALARM:   [{l['_matched_model']}] {l.get('title')}  |  {l.get('price')}  →  {url}{tag}")
 
     if unmatched_recent:
         log.warning(

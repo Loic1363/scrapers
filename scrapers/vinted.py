@@ -122,9 +122,7 @@ def parse_item(raw: Dict) -> Dict:
     photo = raw.get("photo") or {}
     high_res = photo.get("high_resolution") or {}
     ts = high_res.get("timestamp")
-    # Le timestamp de la photo (à la seconde près) sert de proxy fiable pour la date de
-    # publication de l'annonce : contrairement à 2ememain.be, pas besoin de vérification
-    # supplémentaire, Vinted donne directement une heure précise.
+    
     posted_at = datetime.datetime.fromtimestamp(ts, tz=THEFT_TIME.tzinfo) if ts else None
 
     seller = raw.get("user") or {}
@@ -215,15 +213,15 @@ def scrape_stolen_stihl_tools() -> List[Dict]:
         seller_name = (items[0].get("seller") or {}).get("name", "inconnu")
         if len(models_found) >= 2 or len(items) >= 2:
             print("\n" + "=" * 60)
-            print("!!! ALERTE VENDEUR SUSPECT !!!")
-            print(f"    Vendeur : {seller_name} (id: {sid})")
-            print(f"    Modèles détectés : {', '.join(sorted(models_found))}")
-            print(f"    Nombre d'annonces : {len(items)}")
+            print("ALARM: !!! ALERTE VENDEUR SUSPECT !!!")
+            print(f"ALARM:     Vendeur : {seller_name} (id: {sid})")
+            print(f"ALARM:     Modèles détectés : {', '.join(sorted(models_found))}")
+            print(f"ALARM:     Nombre d'annonces : {len(items)}")
             for l in items:
                 tag = " [NOUVEAU]" if l.get("is_new") else ""
-                print(f"    → {l.get('title')}  |  {l.get('price')}{tag}")
+                print(f"ALARM:     → {l.get('title')}  |  {l.get('price')}{tag}")
                 if l.get("url"):
-                    print(f"      {l['url']}")
+                    print(f"ALARM:       {l['url']}")
             print("=" * 60 + "\n")
 
     matched_ids = {l.get("id") for l in matched}
@@ -234,7 +232,7 @@ def scrape_stolen_stihl_tools() -> List[Dict]:
         for l in matched:
             url = l.get("url") or "URL indisponible"
             tag = " [NOUVEAU]" if l.get("is_new") else ""
-            print(f"  [{l['_matched_model']}] {l.get('title')}  |  {l.get('price')}  →  {url}{tag}")
+            print(f"ALARM:   [{l['_matched_model']}] {l.get('title')}  |  {l.get('price')}  →  {url}{tag}")
 
     if unmatched_recent:
         log.warning(f"{len(unmatched_recent)} annonce(s) récente(s) sans modèle identifié — à vérifier manuellement :")

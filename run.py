@@ -15,7 +15,7 @@ output.mkdir(exist_ok=True)
 
 INTERVAL_SECONDS = 45 * 60
 
-# Étape en cours ("Facebook Marketplace" / "2ememain.be" / "Vinted" / None), lue par web.py.
+
 CURRENT_STAGE = {"name": None}
 
 
@@ -27,41 +27,31 @@ def _save(site_slug: str, results) -> None:
 
 
 def _print_suspects_report() -> None:
-    """Vendeurs suspects connus (cumulé sur tous les passages) et correspondances
-    possibles entre sites. N'utilise que les annonces déjà reconnues comme suspectes."""
     known = suspects.known_suspects(min_listings=2)
     if known:
         print("\n" + "#" * 60)
-        print(f"VENDEURS SUSPECTS CONNUS (historique complet) : {len(known)}")
+        print(f"ALARM: VENDEURS SUSPECTS CONNUS (historique complet) : {len(known)}")
         for entry in known:
             pattern = suspects.selling_pattern(entry["listings"])
             print(
-                f"  [{entry['site']}] {entry['seller_name']} (id: {entry['seller_id']}) "
+                f"ALARM:   [{entry['site']}] {entry['seller_name']} (id: {entry['seller_id']}) "
                 f"— {len(entry['listings'])} annonce(s), vente {pattern}"
             )
             for l in entry["listings"]:
-                print(f"    → {l['title']}  |  {l['price']}  |  posté: {l.get('posted_at', '?')}  |  {l['url']}")
+                print(f"ALARM:     → {l['title']}  |  {l['price']}  |  posté: {l.get('posted_at', '?')}  |  {l['url']}")
         print("#" * 60 + "\n")
 
     groups = suspects.cross_site_groups()
     if groups:
         print("\n" + "#" * 60)
-        print(f"CORRESPONDANCES POSSIBLES ENTRE SITES (même nom, à vérifier manuellement) : {len(groups)}")
+        print(f"ALARM: CORRESPONDANCES POSSIBLES ENTRE SITES (même nom, à vérifier manuellement) : {len(groups)}")
         for group in groups:
             sites_desc = ", ".join(f"{e['site']} (id:{e['seller_id']})" for e in group)
-            print(f"  {group[0]['seller_name']} → {sites_desc}")
+            print(f"ALARM:   {group[0]['seller_name']} → {sites_desc}")
         print("#" * 60 + "\n")
 
 
 async def run_once():
-    """Lance les 3 sites en séquence : Facebook, puis 2ememain, puis Vinted.
-    Le minuteur de 45 min avant le prochain passage démarre dès que Facebook a terminé
-    (les deux autres sites tournent ensuite sans décaler ce repère).
-
-    Chaque annonce suspecte (modèle volé identifié) est enregistrée dans une base
-    persistante par vendeur (scrapers/suspects.py) : une annonce déjà connue pour ce
-    vendeur n'est jamais resignalée. La valeur retournée ne contient donc que les
-    NOUVELLES alertes de ce passage."""
     new_alerts = []
 
     CURRENT_STAGE["name"] = "Facebook Marketplace"
@@ -98,9 +88,9 @@ async def run_once():
     CURRENT_STAGE["name"] = None
 
     if new_alerts:
-        print(f"\nNouvelles alertes ce passage (3 sites) : {len(new_alerts)}")
+        print(f"\nALARM: Nouvelles alertes ce passage (3 sites) : {len(new_alerts)}")
         for a in new_alerts:
-            print(f"  [{a['site']}] [{a['matched_model']}] {a['title']}  |  {a['price']}  |  {a['url']}")
+            print(f"ALARM:   [{a['site']}] [{a['matched_model']}] {a['title']}  |  {a['price']}  |  {a['url']}")
     else:
         print("\nAucune nouvelle alerte ce passage (annonces déjà connues ou aucune correspondance).")
 

@@ -11,12 +11,30 @@ function isScrolledToBottom() {
   return consoleEl.scrollHeight - consoleEl.scrollTop - consoleEl.clientHeight < 40;
 }
 
+function escapeHtml(str) {
+  return str.replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
+}
+
+function renderLine(line) {
+  if (line.includes("ALARM: ")) {
+    const escaped = escapeHtml(line.replace("ALARM: ", ""));
+    return `<span class="log-alarm">${escaped}</span>`;
+  }
+  const escaped = escapeHtml(line);
+  return escaped.replace(/(\|\s*)(INFO|SUCCESS|WARNING|ERROR)(\s*\|)/, (_match, pre, word, post) => {
+    return `${pre}<span class="log-${word.toLowerCase()}">${word}</span>${post}`;
+  });
+}
+
 async function pollLogs() {
   const stickToBottom = isScrolledToBottom();
   const res = await fetch(`/api/logs?since=${logCursor}`);
   const data = await res.json();
   if (data.lines.length) {
-    consoleEl.textContent += (consoleEl.textContent ? "\n" : "") + data.lines.join("\n");
+    const html = data.lines.map(renderLine).join("\n");
+    consoleEl.insertAdjacentHTML("beforeend", (consoleEl.textContent ? "\n" : "") + html);
     logCursor = data.total;
     if (stickToBottom) {
       consoleEl.scrollTop = consoleEl.scrollHeight;

@@ -5,6 +5,7 @@
   --text: #d7dae0;
   --muted: #7c8290;
   --ok: #4caf7d;
+  --warn: #e0a458;
   --alarm: #e05252;
   --accent: #5b8def;
 }
@@ -112,4 +113,25 @@ main {
   color: #c6cad3;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.log-info {
+  color: var(--muted);
+}
+
+.log-success {
+  color: var(--ok);
+}
+
+.log-warning {
+  color: var(--warn);
+}
+
+.log-error {
+  color: var(--alarm);
+}
+
+.log-alarm {
+  color: var(--alarm);
+  font-weight: 600;
 }
