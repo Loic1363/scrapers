@@ -4,7 +4,7 @@ import json
 import sys
 from pathlib import Path
 
-from scrapers import facebook, deuxiememain, vinted
+from scrapers import facebook, deuxiememain, vinted, suspects
 
 if sys.stdout.encoding.lower() != "utf-8":
     sys.stdout.reconfigure(encoding="utf-8")
@@ -26,11 +26,43 @@ def _save(site_slug: str, results) -> None:
     print(f"Résultats sauvegardés dans {out_file}")
 
 
+def _print_suspects_report() -> None:
+    """Vendeurs suspects connus (cumulé sur tous les passages) et correspondances
+    possibles entre sites. N'utilise que les annonces déjà reconnues comme suspectes."""
+    known = suspects.known_suspects(min_listings=2)
+    if known:
+        print("\n" + "#" * 60)
+        print(f"VENDEURS SUSPECTS CONNUS (historique complet) : {len(known)}")
+        for entry in known:
+            pattern = suspects.selling_pattern(entry["listings"])
+            print(
+                f"  [{entry['site']}] {entry['seller_name']} (id: {entry['seller_id']}) "
+                f"— {len(entry['listings'])} annonce(s), vente {pattern}"
+            )
+            for l in entry["listings"]:
+                print(f"    → {l['title']}  |  {l['price']}  |  posté: {l.get('posted_at', '?')}  |  {l['url']}")
+        print("#" * 60 + "\n")
+
+    groups = suspects.cross_site_groups()
+    if groups:
+        print("\n" + "#" * 60)
+        print(f"CORRESPONDANCES POSSIBLES ENTRE SITES (même nom, à vérifier manuellement) : {len(groups)}")
+        for group in groups:
+            sites_desc = ", ".join(f"{e['site']} (id:{e['seller_id']})" for e in group)
+            print(f"  {group[0]['seller_name']} → {sites_desc}")
+        print("#" * 60 + "\n")
+
+
 async def run_once():
     """Lance les 3 sites en séquence : Facebook, puis 2ememain, puis Vinted.
     Le minuteur de 45 min avant le prochain passage démarre dès que Facebook a terminé
-    (les deux autres sites tournent ensuite sans décaler ce repère)."""
-    all_results = []
+    (les deux autres sites tournent ensuite sans décaler ce repère).
+
+    Chaque annonce suspecte (modèle volé identifié) est enregistrée dans une base
+    persistante par vendeur (scrapers/suspects.py) : une annonce déjà connue pour ce
+    vendeur n'est jamais resignalée. La valeur retournée ne contient donc que les
+    NOUVELLES alertes de ce passage."""
+    new_alerts = []
 
     CURRENT_STAGE["name"] = "Facebook Marketplace"
     print(f"\n=== Facebook Marketplace ({datetime.datetime.now().strftime('%H:%M:%S')}) ===")
@@ -41,7 +73,7 @@ async def run_once():
         fb_results = []
     next_run_anchor = datetime.datetime.now()
     _save("facebook", fb_results)
-    all_results.extend(fb_results)
+    new_alerts.extend(suspects.record_matches("facebook", fb_results))
 
     CURRENT_STAGE["name"] = "2ememain.be"
     print(f"\n=== 2ememain.be ({datetime.datetime.now().strftime('%H:%M:%S')}) ===")
@@ -51,7 +83,7 @@ async def run_once():
         print(f"Erreur 2ememain.be : {exc}")
         dm_results = []
     _save("2ememain", dm_results)
-    all_results.extend(dm_results)
+    new_alerts.extend(suspects.record_matches("2ememain", dm_results))
 
     CURRENT_STAGE["name"] = "Vinted"
     print(f"\n=== Vinted ({datetime.datetime.now().strftime('%H:%M:%S')}) ===")
@@ -61,11 +93,20 @@ async def run_once():
         print(f"Erreur Vinted : {exc}")
         vt_results = []
     _save("vinted", vt_results)
-    all_results.extend(vt_results)
+    new_alerts.extend(suspects.record_matches("vinted", vt_results))
 
     CURRENT_STAGE["name"] = None
-    print(f"\nTotal annonces suspectes (3 sites) : {len(all_results)}")
-    return all_results, next_run_anchor
+
+    if new_alerts:
+        print(f"\nNouvelles alertes ce passage (3 sites) : {len(new_alerts)}")
+        for a in new_alerts:
+            print(f"  [{a['site']}] [{a['matched_model']}] {a['title']}  |  {a['price']}  |  {a['url']}")
+    else:
+        print("\nAucune nouvelle alerte ce passage (annonces déjà connues ou aucune correspondance).")
+
+    _print_suspects_report()
+
+    return new_alerts, next_run_anchor
 
 
 async def run_forever():
