@@ -18,6 +18,18 @@ INTERVAL_SECONDS = 45 * 60
 
 CURRENT_STAGE = {"name": None}
 
+COOLDOWN_HOURS = 2
+SITE_COOLDOWN_UNTIL = {"facebook": None, "2ememain": None, "vinted": None}
+
+
+def _on_cooldown(site: str) -> bool:
+    until = SITE_COOLDOWN_UNTIL[site]
+    return until is not None and datetime.datetime.now() < until
+
+
+def _start_cooldown(site: str) -> None:
+    SITE_COOLDOWN_UNTIL[site] = datetime.datetime.now() + datetime.timedelta(hours=COOLDOWN_HOURS)
+
 
 def _save(site_slug: str, results) -> None:
     out_file = output / f"stolen_stihl_{site_slug}.json"
@@ -55,33 +67,51 @@ async def run_once():
     new_alerts = []
 
     CURRENT_STAGE["name"] = "Facebook Marketplace"
-    print(f"\n=== Facebook Marketplace ({datetime.datetime.now().strftime('%H:%M:%S')}) ===")
-    try:
-        fb_results = await facebook.scrape_stolen_stihl_tools()
-    except Exception as exc:
-        print(f"Erreur Facebook Marketplace : {exc}")
+    if _on_cooldown("facebook"):
+        until = SITE_COOLDOWN_UNTIL["facebook"]
+        print(f"Facebook Marketplace en pause jusqu'à {until.strftime('%H:%M:%S')} (erreur précédente), passage ignoré.")
         fb_results = []
+    else:
+        print(f"\n=== Facebook Marketplace ({datetime.datetime.now().strftime('%H:%M:%S')}) ===")
+        try:
+            fb_results = await facebook.scrape_stolen_stihl_tools()
+        except Exception as exc:
+            print(f"Erreur Facebook Marketplace : {exc}")
+            _start_cooldown("facebook")
+            fb_results = []
     next_run_anchor = datetime.datetime.now()
     _save("facebook", fb_results)
     new_alerts.extend(suspects.record_matches("facebook", fb_results))
 
     CURRENT_STAGE["name"] = "2ememain.be"
-    print(f"\n=== 2ememain.be ({datetime.datetime.now().strftime('%H:%M:%S')}) ===")
-    try:
-        dm_results = deuxiememain.scrape_stolen_stihl_tools()
-    except Exception as exc:
-        print(f"Erreur 2ememain.be : {exc}")
+    if _on_cooldown("2ememain"):
+        until = SITE_COOLDOWN_UNTIL["2ememain"]
+        print(f"2ememain.be en pause jusqu'à {until.strftime('%H:%M:%S')} (erreur précédente), passage ignoré.")
         dm_results = []
+    else:
+        print(f"\n=== 2ememain.be ({datetime.datetime.now().strftime('%H:%M:%S')}) ===")
+        try:
+            dm_results = deuxiememain.scrape_stolen_stihl_tools()
+        except Exception as exc:
+            print(f"Erreur 2ememain.be : {exc}")
+            _start_cooldown("2ememain")
+            dm_results = []
     _save("2ememain", dm_results)
     new_alerts.extend(suspects.record_matches("2ememain", dm_results))
 
     CURRENT_STAGE["name"] = "Vinted"
-    print(f"\n=== Vinted ({datetime.datetime.now().strftime('%H:%M:%S')}) ===")
-    try:
-        vt_results = vinted.scrape_stolen_stihl_tools()
-    except Exception as exc:
-        print(f"Erreur Vinted : {exc}")
+    if _on_cooldown("vinted"):
+        until = SITE_COOLDOWN_UNTIL["vinted"]
+        print(f"Vinted en pause jusqu'à {until.strftime('%H:%M:%S')} (erreur précédente), passage ignoré.")
         vt_results = []
+    else:
+        print(f"\n=== Vinted ({datetime.datetime.now().strftime('%H:%M:%S')}) ===")
+        try:
+            vt_results = vinted.scrape_stolen_stihl_tools()
+        except Exception as exc:
+            print(f"Erreur Vinted : {exc}")
+            _start_cooldown("vinted")
+            vt_results = []
     _save("vinted", vt_results)
     new_alerts.extend(suspects.record_matches("vinted", vt_results))
 
