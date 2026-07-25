@@ -1,4 +1,3 @@
-/* ===== Logs & état scraper (repris de l'implémentation d'origine) ===== */
 const consoleEl = document.getElementById("console");
 const alarmBadge = document.getElementById("alarm-badge");
 const runBadge = document.getElementById("run-badge");
@@ -9,6 +8,16 @@ const logsToggleBtn = document.getElementById("logs-toggle-btn");
 
 let logCursor = 0;
 let nextRunAt = null;
+let backendAvailable = true;
+
+function disableBackendUI() {
+  if (!backendAvailable) return;
+  backendAvailable = false;
+  document.querySelector(".status-bar").style.display = "none";
+  consolePanel.classList.remove("open");
+  consolePanel.style.display = "none";
+  exportBtn.style.display = "none";
+}
 
 function isScrolledToBottom() {
   return consoleEl.scrollHeight - consoleEl.scrollTop - consoleEl.clientHeight < 40;
@@ -32,38 +41,50 @@ function renderLine(line) {
 }
 
 async function pollLogs() {
-  const stickToBottom = isScrolledToBottom();
-  const res = await fetch(`/api/logs?since=${logCursor}`);
-  const data = await res.json();
-  if (data.lines.length) {
-    const html = data.lines.map(renderLine).join("\n");
-    consoleEl.insertAdjacentHTML("beforeend", (consoleEl.textContent ? "\n" : "") + html);
-    logCursor = data.total;
-    if (stickToBottom) consoleEl.scrollTop = consoleEl.scrollHeight;
+  if (!backendAvailable) return;
+  try {
+    const stickToBottom = isScrolledToBottom();
+    const res = await fetch(`/api/logs?since=${logCursor}`);
+    if (!res.ok) throw new Error("logs unavailable");
+    const data = await res.json();
+    if (data.lines.length) {
+      const html = data.lines.map(renderLine).join("\n");
+      consoleEl.insertAdjacentHTML("beforeend", (consoleEl.textContent ? "\n" : "") + html);
+      logCursor = data.total;
+      if (stickToBottom) consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+  } catch (e) {
+    disableBackendUI();
   }
 }
 
 async function pollState() {
-  const res = await fetch("/api/state");
-  const state = await res.json();
+  if (!backendAvailable) return;
+  try {
+    const res = await fetch("/api/state");
+    if (!res.ok) throw new Error("state unavailable");
+    const state = await res.json();
 
-  if (state.alarm) {
-    alarmBadge.textContent = `Alerte : ${state.alarm_count} annonce(s) suspecte(s)`;
-    alarmBadge.className = "badge badge-alarm";
-  } else {
-    alarmBadge.textContent = "Aucune alerte";
-    alarmBadge.className = "badge badge-ok";
+    if (state.alarm) {
+      alarmBadge.textContent = `Alerte : ${state.alarm_count} annonce(s) suspecte(s)`;
+      alarmBadge.className = "badge badge-alarm";
+    } else {
+      alarmBadge.textContent = "Aucune alerte";
+      alarmBadge.className = "badge badge-ok";
+    }
+
+    if (state.running) {
+      runBadge.textContent = state.current_stage ? `En cours : ${state.current_stage}` : "Recherche en cours...";
+      runBadge.className = "badge badge-running";
+    } else {
+      runBadge.textContent = "En attente";
+      runBadge.className = "badge badge-idle";
+    }
+
+    nextRunAt = state.next_run_at ? new Date(state.next_run_at) : null;
+  } catch (e) {
+    disableBackendUI();
   }
-
-  if (state.running) {
-    runBadge.textContent = state.current_stage ? `En cours : ${state.current_stage}` : "Recherche en cours...";
-    runBadge.className = "badge badge-running";
-  } else {
-    runBadge.textContent = "En attente";
-    runBadge.className = "badge badge-idle";
-  }
-
-  nextRunAt = state.next_run_at ? new Date(state.next_run_at) : null;
 }
 
 function tickTimer() {
@@ -88,7 +109,6 @@ setInterval(pollLogs, 2000);
 setInterval(pollState, 3000);
 setInterval(tickTimer, 1000);
 
-/* ===== Dashboard vendeurs/annonces ===== */
 let sellers = [];
 let filters = { status: "all", site: "all", model: "all", search: "" };
 let selectedId = null;
@@ -281,10 +301,16 @@ viewMapBtn.addEventListener("click", () => {
 async function loadSellers() {
   try {
     const res = await fetch("/api/sellers");
+    if (!res.ok) throw new Error("api unavailable");
     sellers = await res.json();
   } catch (e) {
-    sellers = [];
-    console.error("Impossible de charger /api/sellers", e);
+    try {
+      const res = await fetch("/data/sellers.json");
+      sellers = await res.json();
+    } catch (e2) {
+      sellers = [];
+      console.error("Impossible de charger les données vendeurs", e2);
+    }
   }
   renderPills();
   renderTable();

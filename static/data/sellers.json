@@ -1,0 +1,94 @@
+[
+  {
+    "id": "2ememain:31208337",
+    "name": "Mathias",
+    "status": "normal",
+    "listingCount": 1,
+    "sitesUsed": [
+      "2ememain.be"
+    ],
+    "pattern": "insuffisant",
+    "listings": [
+      {
+        "site": "2ememain.be",
+        "model": "HS 81R",
+        "title": "Heggenschaar stihl hs 81R",
+        "price": 125.0,
+        "city": "Willebroek",
+        "postedAt": "2026-07-25T17:20:00+02:00",
+        "url": "https://www.2ememain.be/v/jardin-terrasse/taille-haies/m2423993455-heggenschaar-stihl-hs-81r",
+        "lat": 51.0667,
+        "lon": 4.3667
+      }
+    ]
+  },
+  {
+    "id": "2ememain:51659933",
+    "name": "BeEm",
+    "status": "normal",
+    "listingCount": 1,
+    "sitesUsed": [
+      "2ememain.be"
+    ],
+    "pattern": "insuffisant",
+    "listings": [
+      {
+        "site": "2ememain.be",
+        "model": "HS 81R",
+        "title": "Proffesionele Stihl HS 81R heggenschaar. In perfecte staat.",
+        "price": 380.0,
+        "city": "Heppen",
+        "postedAt": "2026-07-25T10:02:00+02:00",
+        "url": "https://www.2ememain.be/v/jardin-terrasse/taille-haies/m2423828438-proffesionele-stihl-hs-81r-heggenschaar-in-perfecte-staat",
+        "lat": 51.0833,
+        "lon": 5.3667
+      }
+    ]
+  },
+  {
+    "id": "vinted:3171014720",
+    "name": "dealfactory33",
+    "status": "normal",
+    "listingCount": 1,
+    "sitesUsed": [
+      "Vinted"
+    ],
+    "pattern": "insuffisant",
+    "listings": [
+      {
+        "site": "Vinted",
+        "model": "FS 55",
+        "title": "Débroussailleuse thermique stihl fs55",
+        "price": 160.0,
+        "city": null,
+        "postedAt": "2026-07-25T01:47:08+02:00",
+        "url": "https://www.vinted.be/items/9483192111-debroussailleuse-thermique-stihl-fs55",
+        "lat": null,
+        "lon": null
+      }
+    ]
+  },
+  {
+    "id": "2ememain:28069480",
+    "name": "M.A",
+    "status": "normal",
+    "listingCount": 1,
+    "sitesUsed": [
+      "2ememain.be"
+    ],
+    "pattern": "insuffisant",
+    "listings": [
+      {
+        "site": "2ememain.be",
+        "model": "BG 86",
+        "title": "Bladblazer van STIHL type BG86.",
+        "price": 285.0,
+        "city": "Bilzen",
+        "postedAt": "2026-07-25T21:59:00+02:00",
+        "url": "https://www.2ememain.be/v/jardin-terrasse/souffleurs-de-feuilles/m2424064280-bladblazer-van-stihl-type-bg86",
+        "lat": 50.8703,
+        "lon": 5.5167
+      }
+    ]
+  }
+]
