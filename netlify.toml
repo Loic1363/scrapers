@@ -1,6 +1,16 @@
 [build]
   publish = "static"
 
+[[redirects]]
+  from = "/"
+  to = "/dashboard.html"
+  status = 200
+
+[[redirects]]
+  from = "/dashboard"
+  to = "/dashboard.html"
+  status = 200
+
 [[headers]]
   for = "/*"
   [headers.values]
