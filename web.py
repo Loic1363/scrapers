@@ -1,12 +1,16 @@
 import asyncio
 import datetime
+import json
 import logging
+import subprocess
 import sys
 import threading
 import time
 from pathlib import Path
 
 BASE_DIR = Path(__file__).parent
+STATIC_DATA_FILE = BASE_DIR / "static" / "data" / "sellers.json"
+PUBLISH_BRANCH = "valentin"
 
 
 class _TeeStream:
@@ -80,6 +84,7 @@ def _scraper_loop() -> None:
                 _state["alarm"] = len(results) > 0
                 _state["alarm_count"] = len(results)
                 _state["last_run_at"] = datetime.datetime.now().isoformat()
+            _publish_snapshot()
         except Exception as exc:
             print(f"Erreur pendant le passage : {exc}")
             anchor = datetime.datetime.now()
@@ -101,6 +106,40 @@ def _stage_watcher() -> None:
         with _lock:
             _state["current_stage"] = scraper.CURRENT_STAGE["name"]
         time.sleep(1)
+
+
+def _current_branch() -> str:
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            cwd=BASE_DIR, capture_output=True, text=True, check=True,
+        )
+        return result.stdout.strip()
+    except (subprocess.CalledProcessError, OSError):
+        return ""
+
+
+def _publish_snapshot() -> None:
+    if _current_branch() != PUBLISH_BRANCH:
+        return
+    try:
+        STATIC_DATA_FILE.parent.mkdir(parents=True, exist_ok=True)
+        STATIC_DATA_FILE.write_text(
+            json.dumps(suspects.to_dashboard_sellers(), indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+        subprocess.run(["git", "add", str(STATIC_DATA_FILE)], cwd=BASE_DIR, check=True)
+        diff = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=BASE_DIR)
+        if diff.returncode == 0:
+            return
+        subprocess.run(
+            ["git", "commit", "-m", "Data update"],
+            cwd=BASE_DIR, check=True,
+        )
+        subprocess.run(["git", "push", "origin", PUBLISH_BRANCH], cwd=BASE_DIR, check=True)
+        print(f"Snapshot on Netlify (branch {PUBLISH_BRANCH})")
+    except (subprocess.CalledProcessError, OSError) as exc:
+        print(f"Erreur lors de la publication du snapshot : {exc}")
 
 
 @app.route("/")
