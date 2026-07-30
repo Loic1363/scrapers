@@ -1,11 +1,16 @@
 import datetime
 import json
 import re
+import time
 import unicodedata
+import urllib.error
+import urllib.parse
+import urllib.request
 from pathlib import Path
 from typing import Dict, List, Optional
 
 STORE_FILE = Path(__file__).parent.parent / "results" / "suspects.json"
+GEOCODE_CACHE_FILE = Path(__file__).parent.parent / "results" / "geocode_cache.json"
 
 BATCH_THRESHOLD = datetime.timedelta(hours=24)
 
@@ -131,25 +136,8 @@ SITE_LABELS = {
     "vinted": "Vinted",
 }
 
-CITY_COORDS = {
-    "willebroek": (51.0667, 4.3667),
-    "heppen": (51.0833, 5.3667),
-    "bilzen": (50.8703, 5.5167),
-    "bruxelles": (50.8503, 4.3517),
-    "brussel": (50.8503, 4.3517),
-    "antwerpen": (51.2194, 4.4025),
-    "gent": (51.0543, 3.7174),
-    "liege": (50.6326, 5.5797),
-    "liège": (50.6326, 5.5797),
-    "charleroi": (50.4114, 4.4445),
-    "namur": (50.4669, 4.8675),
-    "mons": (50.4542, 3.9523),
-    "leuven": (50.8798, 4.7005),
-    "brugge": (51.2093, 3.2247),
-    "lille": (50.6292, 3.0573),
-    "douai": (50.3714, 3.0797),
-    "valenciennes": (50.3574, 3.5233),
-}
+GEOCODE_USER_AGENT = "stihl-tracker/1.0 (usage local, contact: repo owner)"
+GEOCODE_RATE_LIMIT_SECONDS = 1.0
 
 
 def _parse_price(raw) -> Optional[float]:
@@ -161,15 +149,71 @@ def _parse_price(raw) -> Optional[float]:
     return float(match.group(1).replace(",", "."))
 
 
-def _geocode(location: Optional[str]) -> tuple:
+def _primary_location(location: str) -> str:
+    return location.split(" + ")[0].strip()
+
+
+def _load_geocode_cache() -> Dict:
+    if GEOCODE_CACHE_FILE.exists():
+        try:
+            return json.loads(GEOCODE_CACHE_FILE.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            pass
+    return {}
+
+
+def _save_geocode_cache(cache: Dict) -> None:
+    GEOCODE_CACHE_FILE.parent.mkdir(exist_ok=True)
+    GEOCODE_CACHE_FILE.write_text(json.dumps(cache, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+def _query_nominatim(query: str, countrycodes: str) -> Optional[List[float]]:
+    url = "https://nominatim.openstreetmap.org/search?" + urllib.parse.urlencode({
+        "q": query,
+        "format": "json",
+        "limit": 1,
+        "countrycodes": countrycodes,
+    })
+    req = urllib.request.Request(url, headers={"User-Agent": GEOCODE_USER_AGENT})
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            results = json.loads(resp.read())
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError):
+        return None
+    if not results:
+        return None
+    return [float(results[0]["lat"]), float(results[0]["lon"])]
+
+
+def _query_nominatim_be_fr(query: str) -> Optional[List[float]]:
+    coords = _query_nominatim(query, "be")
+    if coords:
+        return coords
+    time.sleep(GEOCODE_RATE_LIMIT_SECONDS)
+    return _query_nominatim(query, "fr")
+
+
+def _geocode(location: Optional[str], cache: Dict) -> tuple:
     if not location:
         return (None, None)
-    return CITY_COORDS.get(location.strip().lower(), (None, None))
+    key = _primary_location(location).lower()
+    if not key:
+        return (None, None)
+    if key in cache:
+        entry = cache[key]
+        return tuple(entry) if entry else (None, None)
+
+    coords = _query_nominatim_be_fr(_primary_location(location))
+    cache[key] = coords
+    time.sleep(GEOCODE_RATE_LIMIT_SECONDS)
+    return tuple(coords) if coords else (None, None)
 
 
 def to_dashboard_sellers() -> List[Dict]:
     data = _load()
     sellers = data.get("sellers", {})
+    geocode_cache = _load_geocode_cache()
+    cache_size_before = len(geocode_cache)
 
     by_name: Dict[str, set] = {}
     for entry in sellers.values():
@@ -187,7 +231,7 @@ def to_dashboard_sellers() -> List[Dict]:
 
         listings_out = []
         for l in entry["listings"]:
-            lat, lon = _geocode(l.get("location"))
+            lat, lon = _geocode(l.get("location"), geocode_cache)
             listings_out.append({
                 "site": SITE_LABELS.get(entry["site"], entry["site"]),
                 "model": l.get("matched_model"),
@@ -209,5 +253,8 @@ def to_dashboard_sellers() -> List[Dict]:
             "pattern": selling_pattern(entry["listings"]),
             "listings": listings_out,
         })
+
+    if len(geocode_cache) != cache_size_before:
+        _save_geocode_cache(geocode_cache)
 
     return out

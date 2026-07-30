@@ -2,12 +2,12 @@
   {
     "id": "2ememain:31208337",
     "name": "Mathias",
-    "status": "normal",
-    "listingCount": 1,
+    "status": "suspect",
+    "listingCount": 2,
     "sitesUsed": [
       "2ememain.be"
     ],
-    "pattern": "insuffisant",
+    "pattern": "échelonné",
     "listings": [
       {
         "site": "2ememain.be",
@@ -17,20 +17,31 @@
         "city": "Willebroek",
         "postedAt": "2026-07-25T17:20:00+02:00",
         "url": "https://www.2ememain.be/v/jardin-terrasse/taille-haies/m2423993455-heggenschaar-stihl-hs-81r",
-        "lat": 51.0667,
-        "lon": 4.3667
+        "lat": 51.0606816,
+        "lon": 4.3588917
+      },
+      {
+        "site": "2ememain.be",
+        "model": "HS 81R",
+        "title": "Heggenschaar stihl hs 81R",
+        "price": 125.0,
+        "city": "Willebroek",
+        "postedAt": "2026-07-29T19:41:00+02:00",
+        "url": "https://www.2ememain.be/v/jardin-terrasse/taille-haies/m2425464935-heggenschaar-stihl-hs-81r",
+        "lat": 51.0606816,
+        "lon": 4.3588917
       }
     ]
   },
   {
     "id": "2ememain:51659933",
     "name": "BeEm",
-    "status": "normal",
-    "listingCount": 1,
+    "status": "suspect",
+    "listingCount": 9,
     "sitesUsed": [
       "2ememain.be"
     ],
-    "pattern": "insuffisant",
+    "pattern": "échelonné",
     "listings": [
       {
         "site": "2ememain.be",
@@ -40,8 +51,96 @@
         "city": "Heppen",
         "postedAt": "2026-07-25T10:02:00+02:00",
         "url": "https://www.2ememain.be/v/jardin-terrasse/taille-haies/m2423828438-proffesionele-stihl-hs-81r-heggenschaar-in-perfecte-staat",
-        "lat": 51.0833,
-        "lon": 5.3667
+        "lat": 51.1088561,
+        "lon": 5.2275686
+      },
+      {
+        "site": "2ememain.be",
+        "model": "HS 81R",
+        "title": "Professionele Stihl HS 81R heggenschaar. In perfecte staat.",
+        "price": 380.0,
+        "city": "Heppen",
+        "postedAt": "2026-07-26T02:06:00+02:00",
+        "url": "https://www.2ememain.be/v/jardin-terrasse/taille-haies/m2424093370-professionele-stihl-hs-81r-heggenschaar-in-perfecte-staat",
+        "lat": 51.1088561,
+        "lon": 5.2275686
+      },
+      {
+        "site": "2ememain.be",
+        "model": "HS 81R",
+        "title": "Professionele Stihl HS 81R heggenschaar. In perfecte staat.",
+        "price": 380.0,
+        "city": "Heppen",
+        "postedAt": "2026-07-26T11:43:00+02:00",
+        "url": "https://www.2ememain.be/v/jardin-terrasse/taille-haies/m2424178648-professionele-stihl-hs-81r-heggenschaar-in-perfecte-staat",
+        "lat": 51.1088561,
+        "lon": 5.2275686
+      },
+      {
+        "site": "2ememain.be",
+        "model": "HS 81R",
+        "title": "Proffesionele Stihl HS 81R heggenschaar. In perfecte staat.",
+        "price": 380.0,
+        "city": "Heppen",
+        "postedAt": "2026-07-27T07:37:00+02:00",
+        "url": "https://www.2ememain.be/v/jardin-terrasse/taille-haies/m2424470466-proffesionele-stihl-hs-81r-heggenschaar-in-perfecte-staat",
+        "lat": 51.1088561,
+        "lon": 5.2275686
+      },
+      {
+        "site": "2ememain.be",
+        "model": "HS 81R",
+        "title": "Proffesionele Stihl HS 81R heggenschaar. In perfecte staat.",
+        "price": 380.0,
+        "city": "Heppen",
+        "postedAt": "2026-07-28T07:35:00+02:00",
+        "url": "https://www.2ememain.be/v/jardin-terrasse/taille-haies/m2424889899-proffesionele-stihl-hs-81r-heggenschaar-in-perfecte-staat",
+        "lat": 51.1088561,
+        "lon": 5.2275686
+      },
+      {
+        "site": "2ememain.be",
+        "model": "HS 81R",
+        "title": "Proffesionele Stihl HS 81R heggenschaar. In perfecte staat.",
+        "price": 380.0,
+        "city": "Heppen",
+        "postedAt": "2026-07-28T17:17:00+02:00",
+        "url": "https://www.2ememain.be/v/jardin-terrasse/taille-haies/m2425086870-proffesionele-stihl-hs-81r-heggenschaar-in-perfecte-staat",
+        "lat": 51.1088561,
+        "lon": 5.2275686
+      },
+      {
+        "site": "2ememain.be",
+        "model": "HS 81R",
+        "title": "Professionele Stihl HS 81R heggenschaar. In perfecte staat.",
+        "price": 375.0,
+        "city": "Heppen",
+        "postedAt": "2026-07-29T07:33:00+02:00",
+        "url": "https://www.2ememain.be/v/jardin-terrasse/taille-haies/m2425216912-professionele-stihl-hs-81r-heggenschaar-in-perfecte-staat",
+        "lat": 51.1088561,
+        "lon": 5.2275686
+      },
+      {
+        "site": "2ememain.be",
+        "model": "HS 81R",
+        "title": "Professionele Stihl HS 81R heggenschaar. In perfecte staat.",
+        "price": 375.0,
+        "city": "Heppen",
+        "postedAt": "2026-07-29T18:12:00+02:00",
+        "url": "https://www.2ememain.be/v/jardin-terrasse/taille-haies/m2425439123-professionele-stihl-hs-81r-heggenschaar-in-perfecte-staat",
+        "lat": 51.1088561,
+        "lon": 5.2275686
+      },
+      {
+        "site": "2ememain.be",
+        "model": "HS 81R",
+        "title": "Professionele Stihl HS 81R heggenschaar. In perfecte staat.",
+        "price": 375.0,
+        "city": "Heppen",
+        "postedAt": "2026-07-30T00:30:00+02:00",
+        "url": "https://www.2ememain.be/v/jardin-terrasse/taille-haies/m2425524430-professionele-stihl-hs-81r-heggenschaar-in-perfecte-staat",
+        "lat": 51.1088561,
+        "lon": 5.2275686
       }
     ]
   },
@@ -86,8 +185,215 @@
         "city": "Bilzen",
         "postedAt": "2026-07-25T21:59:00+02:00",
         "url": "https://www.2ememain.be/v/jardin-terrasse/souffleurs-de-feuilles/m2424064280-bladblazer-van-stihl-type-bg86",
-        "lat": 50.8703,
-        "lon": 5.5167
+        "lat": 50.8707787,
+        "lon": 5.5181089
+      }
+    ]
+  },
+  {
+    "id": "2ememain:27454959",
+    "name": "Nya De Kat",
+    "status": "normal",
+    "listingCount": 1,
+    "sitesUsed": [
+      "2ememain.be"
+    ],
+    "pattern": "insuffisant",
+    "listings": [
+      {
+        "site": "2ememain.be",
+        "model": "FS 55",
+        "title": "Débroussailleuse et débroussailleuse Stihl FS 55 R",
+        "price": 150.0,
+        "city": "Denderleeuw",
+        "postedAt": "2026-07-27T14:28:00+02:00",
+        "url": "https://www.2ememain.be/v/jardin-terrasse/debroussailleuses/m2424606286-debroussailleuse-et-debroussailleuse-stihl-fs-55-r",
+        "lat": 50.8877794,
+        "lon": 4.061375
+      }
+    ]
+  },
+  {
+    "id": "vinted:3124951005",
+    "name": "alfredol28",
+    "status": "normal",
+    "listingCount": 1,
+    "sitesUsed": [
+      "Vinted"
+    ],
+    "pattern": "insuffisant",
+    "listings": [
+      {
+        "site": "Vinted",
+        "model": "FS 55",
+        "title": "Desbrozadora stihl fs 55",
+        "price": 120.0,
+        "city": null,
+        "postedAt": "2026-07-27T16:01:35+02:00",
+        "url": "https://www.vinted.be/items/9505410972-desbrozadora-stihl-fs-55",
+        "lat": null,
+        "lon": null
+      }
+    ]
+  },
+  {
+    "id": "2ememain:27579173",
+    "name": "Joske",
+    "status": "normal",
+    "listingCount": 1,
+    "sitesUsed": [
+      "2ememain.be"
+    ],
+    "pattern": "insuffisant",
+    "listings": [
+      {
+        "site": "2ememain.be",
+        "model": "HS 81R",
+        "title": "Stihl HS 81 R professionele heggenschaar 75 cm blad",
+        "price": 249.0,
+        "city": "Bree",
+        "postedAt": "2026-07-27T18:05:00+02:00",
+        "url": "https://www.2ememain.be/v/jardin-terrasse/taille-haies/m2424696762-stihl-hs-81-r-professionele-heggenschaar-75-cm-blad",
+        "lat": 51.1416131,
+        "lon": 5.5974552
+      }
+    ]
+  },
+  {
+    "id": "2ememain:34461017",
+    "name": "Geert",
+    "status": "normal",
+    "listingCount": 1,
+    "sitesUsed": [
+      "2ememain.be"
+    ],
+    "pattern": "insuffisant",
+    "listings": [
+      {
+        "site": "2ememain.be",
+        "model": "HS 81R",
+        "title": "Stihl HS81R heggenschaar",
+        "price": 0.0,
+        "city": "Balen",
+        "postedAt": "2026-07-28T13:07:00+02:00",
+        "url": "https://www.2ememain.be/v/jardin-terrasse/taille-haies/m2424988987-stihl-hs81r-heggenschaar",
+        "lat": 51.1727481,
+        "lon": 5.1941389
+      }
+    ]
+  },
+  {
+    "id": "2ememain:27319784",
+    "name": "rudi",
+    "status": "normal",
+    "listingCount": 1,
+    "sitesUsed": [
+      "2ememain.be"
+    ],
+    "pattern": "insuffisant",
+    "listings": [
+      {
+        "site": "2ememain.be",
+        "model": "HS 81R",
+        "title": "Stihl.      HS 81R professionele",
+        "price": 400.0,
+        "city": "Sint-Niklaas",
+        "postedAt": "2026-07-28T21:02:00+02:00",
+        "url": "https://www.2ememain.be/v/jardin-terrasse/taille-haies/m2425153700-stihl-hs-81r-professionele",
+        "lat": 51.1686993,
+        "lon": 4.1019296
+      }
+    ]
+  },
+  {
+    "id": "2ememain:41322490",
+    "name": "mbk",
+    "status": "normal",
+    "listingCount": 1,
+    "sitesUsed": [
+      "2ememain.be"
+    ],
+    "pattern": "insuffisant",
+    "listings": [
+      {
+        "site": "2ememain.be",
+        "model": "HS 81R",
+        "title": "Stihl hs81r haagschaar",
+        "price": 450.0,
+        "city": "Zoutleeuw",
+        "postedAt": "2026-07-29T14:06:00+02:00",
+        "url": "https://www.2ememain.be/v/jardin-terrasse/taille-haies/m2425337103-stihl-hs81r-haagschaar",
+        "lat": 50.8331973,
+        "lon": 5.1030991
+      }
+    ]
+  },
+  {
+    "id": "2ememain:59250981",
+    "name": "Hernest93",
+    "status": "normal",
+    "listingCount": 1,
+    "sitesUsed": [
+      "2ememain.be"
+    ],
+    "pattern": "insuffisant",
+    "listings": [
+      {
+        "site": "2ememain.be",
+        "model": "FS 55",
+        "title": "Débroussailleuse Sthil FS55 R",
+        "price": 100.0,
+        "city": "Courcelles + Partie De Roux",
+        "postedAt": "2026-07-29T19:21:00+02:00",
+        "url": "https://www.2ememain.be/v/jardin-terrasse/debroussailleuses/m2425458557-debroussailleuse-sthil-fs55-r",
+        "lat": 50.4574699,
+        "lon": 4.376008
+      }
+    ]
+  },
+  {
+    "id": "vinted:36024683",
+    "name": "lgstihl500i",
+    "status": "normal",
+    "listingCount": 1,
+    "sitesUsed": [
+      "Vinted"
+    ],
+    "pattern": "insuffisant",
+    "listings": [
+      {
+        "site": "Vinted",
+        "model": "HS 81R",
+        "title": "Taille haie Stihl HS 81 T",
+        "price": 260.0,
+        "city": null,
+        "postedAt": "2026-07-29T17:43:42+02:00",
+        "url": "https://www.vinted.be/items/9523606266-taille-haie-stihl-hs-81-t",
+        "lat": null,
+        "lon": null
+      }
+    ]
+  },
+  {
+    "id": "2ememain:41994236",
+    "name": "Kobe Janssens",
+    "status": "normal",
+    "listingCount": 1,
+    "sitesUsed": [
+      "2ememain.be"
+    ],
+    "pattern": "insuffisant",
+    "listings": [
+      {
+        "site": "2ememain.be",
+        "model": "HS 81R",
+        "title": "Taille-haie Stihl HS 81 T",
+        "price": 150.0,
+        "city": "Merksplas + Deel Rijkevorsel",
+        "postedAt": "2026-07-30T15:38:00+02:00",
+        "url": "https://www.2ememain.be/v/jardin-terrasse/taille-haies/m2425688980-taille-haie-stihl-hs-81-t",
+        "lat": 51.3579924,
+        "lon": 4.8627355
       }
     ]
   }
